@@ -30,13 +30,13 @@ public static class BitmapFontImporter
 		if (!import)
 			throw new UnityException (import.name + "is not a valid font-xml file");
 		
-		Font font = new Font ();
 		
 		XmlDocument xml = new XmlDocument ();
 		xml.LoadXml (import.text);
 		
 		XmlNode info = xml.GetElementsByTagName ("info") [0];
-		//XmlNode common = xml.GetElementsByTagName ("common") [0];
+        XmlNode common = xml.GetElementsByTagName("common")[0];
+        XmlNode kernings = xml.GetElementsByTagName("kernings")[0];
 		XmlNodeList chars = xml.GetElementsByTagName ("chars") [0].ChildNodes;
 		
 		float texW = texture.width;
@@ -83,9 +83,35 @@ public static class BitmapFontImporter
 		AssetDatabase.CreateAsset (material, exportPath + ".mat");
 		
 		// Create font
+		Font font = new Font ();
 		font.material = material;
 		font.name = info.Attributes.GetNamedItem ("face").InnerText;
 		font.characterInfo = charInfos;
+
+        SerializedObject mFont = new SerializedObject(font);
+        mFont.FindProperty("m_FontSize").floatValue = float.Parse(common.Attributes.GetNamedItem("base").InnerText);
+        mFont.FindProperty("m_LineSpacing").floatValue = float.Parse(common.Attributes.GetNamedItem("lineHeight").InnerText);
+
+        /* Don't work yet
+        int kerningsCount = int.Parse(kernings.Attributes.GetNamedItem("count").InnerText);
+        if (kerningsCount > 0)
+        {
+            SerializedProperty kerningsProp = mFont.FindProperty("m_KerningValues");
+            for (int i = 0; i < kerningsCount; i++)
+            {
+                kerningsProp.InsertArrayElementAtIndex(i);
+
+                XmlNode kerning = kernings.ChildNodes[i];
+
+                SerializedProperty kern = kerningsProp.GetArrayElementAtIndex(i);
+
+                kern.FindPropertyRelative("second").floatValue = float.Parse(kerning.Attributes.GetNamedItem("amount").InnerText); ;
+            }
+        }*/
+
+
+        mFont.ApplyModifiedProperties();
+
 		AssetDatabase.CreateAsset (font, exportPath + ".fontsettings");
 	}
 	
